@@ -8,12 +8,13 @@
 // @grant        none
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js
 // ==/UserScript==
-debugger;
-document.onload = function () {
+
+$( document ).ready(function () {
+    //jQuery.noConflict();
     var currentUrl = window.location.href;
-    if (currentUrl.contains('docSearchResults.jsp')) {
+    if (currentUrl.indexOf('docSearchResults.jsp') > 0) {
         var arr = [];
-        if(getParameterByName('page') === '0')
+        if(getParameterByName('page') === null || getParameterByName('page') === '1')
         {
             localStorage.clear();
             localStorage.setItem("records", arr);
@@ -27,23 +28,30 @@ document.onload = function () {
         ExtendArray(arr ,odds);
         ExtendArray(arr, evens);
         var iframe = document.createElement("iframe");
-        document.getElementsByClassName('warning')[0].appendChild(iframe);
+        var iP = document.getElementsByClassName('iconic print');
+        $( iP[0] ).append( $(iframe) );
         for(var i = 0; i < arr.length; i++){
-            var href = arr[i].
-            iframeDoc = iframe.contentWindow.document;
-            iframeDoc.onload = function (doc) {
-                var record = ScrapeRecord(document);
+            var href = $( arr[i] ).find('a').attr('href');
+            var doc = iframe.contentWindow.document;
+            var item = ScrapePage(arr[i]);
+            doc.onload = function (doc) {
+                var record = ScrapeRecord(doc);
             };
         }
     }
-};
+});
 
 function NextPage() {
 
 }
 
 function ScrapePage(tr) {
-
+var item = {};
+    item.href = $(tr).find('a').attr('href');
+    var text = $(tr).text();
+    item.name = text.match('^.*');
+    item.recDate = text.match('Rec\. Date:.*?Book Page')[0].replace('Rec. Date:','').replace('Book Page', '');
+    item.rel
 }
 
 function ScrapeRecord(document) {
