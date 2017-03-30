@@ -10,88 +10,90 @@
 // ==/UserScript==
 
 var arr = [];
+var currentRecord = 0;
 
-$( document ).ready(function () {
+$(document).ready(function () {
     Init();
-        var iframe = document.createElement("iframe");
-        var div = document.getElementById('middle');
-        $( div ).prepend( $(iframe) );
-        for(var i = 0; i < arr.length; i++){
-            var href = $( arr[i] ).find('a').attr('href');
-            $(iframe).ready(function (){
-    ScrapeRecord(this);
-                NextRecord();
-});
-            $(iframe).attr('src',href);
-        }
+    var iframe = document.createElement("iframe");
+    $(iframe).attr('id', 'scrape');
+    var div = document.getElementById('middle');
+    $(div).prepend($(iframe));
+    var href = $(arr[currentRecord]).find('a').attr('href');
+    $(iframe).ready(function () {
+        ScrapeRecord(this);
+        NextRecord();
     });
+    $(iframe).attr('src', href);
+});
 
 function Init() {
     var currentUrl = window.location.href;
+
     if (currentUrl.indexOf('docSearchResults.jsp') > 0) {
-        if(getParameterByName('page') === null || getParameterByName('page') === '1')
-        {
+        if (getParameterByName('page') === null || getParameterByName('page') === '1') {
             localStorage.clear();
-            localStorage.setItem("records", arr);
-        }
-        else if(getParameterByName('page') !== undefined)
-        {
-            arr = localStorage.getItem("records");
         }
         var odds = document.getElementsByClassName('odd');
         var evens = document.getElementsByClassName('even');
-        ExtendArray(arr ,odds);
+        ExtendArray(arr, odds);
         ExtendArray(arr, evens);
-        for(var i = 0; i < arr.length; i++)
-        {
-            var item = ScrapePage(arr[i]);
-            arr[i] = item;
+        for (var i = 0; i < arr.length; i++) {
+            arr[i] = ScrapePage(arr[i]);
         }
+        $(window).bind('beforeunload', function () {
+            var nextArr = localStorage.getItem('records');
+            if (nextArr !== null) {
+                ExtendArray(nextArr, arr);
+                localStorage.setItem('records', nextArr);
+            }
+        });
+    }
 }
+
+function NextRecord() {
+
 }
+
 
 function NextPage() {
 
 }
 
-function NextRecord() {
-    
+function ScrapeRecord() {
+    var iframe = $("#scrape");
+
 }
 
 function ScrapePage(tr) {
     var record = {};
     record.href = $(tr).find('a').attr('href');
     var text = $(tr).text();
-    var normalize = function(regxp, s1='', s2=''){
+    var normalize = function (regxp, s1 = '', s2 = '') {
         var matches = text.match(regxp);
-        if(matches !== null)
+        if (matches !== null)
             return text.match(regxp)[0].replace(s1, '').replace(s2, '').trim();
         else
             return '';
     };
     record.name = normalize('^.*');
-    record.recDate = normalize('Rec\. Date:.*?Book Page','Rec. Date:','Book Page');
-    record.bookPage = normalize('Book Page:.*Related','Book Page:','Related');
-    record.rel = normalize('Related:.*?Rel Book Page:','Related:','Rel Book Page');
-    record.relBookPage = normalize('Rel Book Page:.*?Grantor','Rel Book Page:','Grantor');
-    record.grantor = normalize('Grantor:.*?Grantee','Grantor:','Grantee');
-    record.grantee = normalize('Grantee:.*','Grantee:');
-    record.numPages = normalize('Num Pages:.*','Num Pages:');
+    record.recDate = normalize('Rec\. Date:.*?Book Page', 'Rec. Date:', 'Book Page');
+    record.bookPage = normalize('Book Page:.*Related', 'Book Page:', 'Related');
+    record.rel = normalize('Related:.*?Rel Book Page:', 'Related:', 'Rel Book Page');
+    record.relBookPage = normalize('Rel Book Page:.*?Grantor', 'Rel Book Page:', 'Grantor');
+    record.grantor = normalize('Grantor:.*?Grantee', 'Grantor:', 'Grantee');
+    record.grantee = normalize('Grantee:.*', 'Grantee:');
+    record.numPages = normalize('Num Pages:.*', 'Num Pages:');
     return record;
 }
 
-function ScrapeRecord(document) {
-
-}
-
-function ExtendArray(a, b){
-    Array.prototype.push.apply(a,b);
+function ExtendArray(a, b) {
+    Array.prototype.push.apply(a, b);
 }
 
 function getParameterByName(name) {
     var url = window.location.href;
     if (!url) {
-      url = window.location.href;
+        url = window.location.href;
     }
     name = name.replace(/[\[\]]/g, "\\$&");
     var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
