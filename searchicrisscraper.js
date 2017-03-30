@@ -9,11 +9,26 @@
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js
 // ==/UserScript==
 
+var arr = [];
+
 $( document ).ready(function () {
-    //jQuery.noConflict();
+    Init();
+        var iframe = document.createElement("iframe");
+        var div = document.getElementById('middle');
+        $( div ).prepend( $(iframe) );
+        for(var i = 0; i < arr.length; i++){
+            var href = $( arr[i] ).find('a').attr('href');
+            $(iframe).ready(function (){
+    ScrapeRecord(this);
+                NextRecord();
+});
+            $(iframe).attr('src',href);
+        }
+    });
+
+function Init() {
     var currentUrl = window.location.href;
     if (currentUrl.indexOf('docSearchResults.jsp') > 0) {
-        var arr = [];
         if(getParameterByName('page') === null || getParameterByName('page') === '1')
         {
             localStorage.clear();
@@ -27,31 +42,42 @@ $( document ).ready(function () {
         var evens = document.getElementsByClassName('even');
         ExtendArray(arr ,odds);
         ExtendArray(arr, evens);
-        var iframe = document.createElement("iframe");
-        var iP = document.getElementsByClassName('iconic print');
-        $( iP[0] ).append( $(iframe) );
-        for(var i = 0; i < arr.length; i++){
-            var href = $( arr[i] ).find('a').attr('href');
-            var doc = iframe.contentWindow.document;
+        for(var i = 0; i < arr.length; i++)
+        {
             var item = ScrapePage(arr[i]);
-            doc.onload = function (doc) {
-                var record = ScrapeRecord(doc);
-            };
+            arr[i] = item;
         }
-    }
-});
+}
+}
 
 function NextPage() {
 
 }
 
+function NextRecord() {
+    
+}
+
 function ScrapePage(tr) {
-var item = {};
-    item.href = $(tr).find('a').attr('href');
+    var record = {};
+    record.href = $(tr).find('a').attr('href');
     var text = $(tr).text();
-    item.name = text.match('^.*');
-    item.recDate = text.match('Rec\. Date:.*?Book Page')[0].replace('Rec. Date:','').replace('Book Page', '');
-    item.rel
+    var normalize = function(regxp, s1='', s2=''){
+        var matches = text.match(regxp);
+        if(matches !== null)
+            return text.match(regxp)[0].replace(s1, '').replace(s2, '').trim();
+        else
+            return '';
+    };
+    record.name = normalize('^.*');
+    record.recDate = normalize('Rec\. Date:.*?Book Page','Rec. Date:','Book Page');
+    record.bookPage = normalize('Book Page:.*Related','Book Page:','Related');
+    record.rel = normalize('Related:.*?Rel Book Page:','Related:','Rel Book Page');
+    record.relBookPage = normalize('Rel Book Page:.*?Grantor','Rel Book Page:','Grantor');
+    record.grantor = normalize('Grantor:.*?Grantee','Grantor:','Grantee');
+    record.grantee = normalize('Grantee:.*','Grantee:');
+    record.numPages = normalize('Num Pages:.*','Num Pages:');
+    return record;
 }
 
 function ScrapeRecord(document) {
