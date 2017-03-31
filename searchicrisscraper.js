@@ -15,15 +15,19 @@ var currentRecord = 0;
 $(document).ready(function () {
     Init();
     var iframe = document.createElement("iframe");
-    $(iframe).attr('id', 'scrape');
+    iframe = $(iframe);
+    iframe.attr('id', 'scrape');
+    iframe.attr('height', 300);
+    iframe.attr('width', 800);
     var div = document.getElementById('middle');
-    $(div).prepend($(iframe));
-    var href = $(arr[currentRecord]).find('a').attr('href');
-    $(iframe).ready(function () {
-        ScrapeRecord(this);
-        NextRecord();
+    $(div).prepend(iframe);
+    var href = arr[currentRecord].href;
+    iframe.on('load', function () {
+        var jsIframe = iframe.get(0);
+        jsIframe.style.webkitTransform = 'scale(1)';
+        ScrapeRecord(jsIframe.contentWindow.document);
     });
-    $(iframe).attr('src', href);
+    iframe.attr('src', href);
 });
 
 function Init() {
@@ -59,9 +63,16 @@ function NextPage() {
 
 }
 
-function ScrapeRecord() {
-    var iframe = $("#scrape");
-
+function ScrapeRecord(doc) {
+    var tables = $(doc).find('table[width="100%"]');
+    for(var i = 0; i < tables.length; i++){
+        var trHeader = $(tables[i]).children('tr:first').text();
+        
+        console.log(trHeader);
+    }
+    
+    
+    NextRecord();
 }
 
 function ScrapePage(tr) {
