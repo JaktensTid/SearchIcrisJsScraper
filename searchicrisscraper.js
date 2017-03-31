@@ -25,7 +25,7 @@ $(document).ready(function () {
     iframe.on('load', function () {
         var jsIframe = iframe.get(0);
         jsIframe.style.webkitTransform = 'scale(1)';
-        ScrapeRecord(jsIframe.contentWindow.document);
+        ScrapeRecord(iframe.contents());
     });
     iframe.attr('src', href);
 });
@@ -64,13 +64,39 @@ function NextPage() {
 }
 
 function ScrapeRecord(doc) {
+    var fieldset = doc.get(0).getElementsByTagName('fieldset')[0];
+    var fsText = fieldset.innerText.replace(/(\r\n|\n|\r)/gm,"").trim();
+     var fillRecord = function(attr, s1, s2){
+        var matches = fsText.match('(' + s1 + ')(.*)(' + s2 + ')');
+        arr[currentRecord][attr] = matches[2].trim();
+    };
+    fillRecord('RecordingFee', 'Recording Fee', 'Documentary Fee');
+    fillRecord('DocumentaryFee', 'Documentary Fee', 'Total Fee');
+    fillRecord('Address1', 'Address1', 'Address2');
+    fillRecord('Address2', 'Address2', 'City');
+    fillRecord('City', 'City', 'State');
+    fillRecord('State', 'State', 'Zip');
+    fillRecord('Zip', 'Zip', 'Mailback Date');
+    
     var tables = $(doc).find('table[width="100%"]');
     for(var i = 0; i < tables.length; i++){
-        var trHeader = $(tables[i]).children('tr:first').text();
-        
-        console.log(trHeader);
+        var trHeader = '';
+        var rows = $(tables[i]).find('> tbody > tr');
+        for(var j = 0; j < rows.length; j++)
+        {
+            if(j === 0)
+            {
+                trHeader = rows[0].innerText.trim();
+                if(trHeader === '') break;
+                arr[currentRecord][trHeader] = '';
+            }
+            else
+            {
+                arr[currentRecord][trHeader] += rows[j].innerText.trim();
+            }
+        }
     }
-    
+    currentRecord += 1;
     
     NextRecord();
 }
