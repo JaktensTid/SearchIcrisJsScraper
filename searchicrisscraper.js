@@ -60,7 +60,8 @@ function Init() {
 }
 
 function NextRecord() {
-    if(currentRecord + 1 !== arr.length)
+    //if(currentRecord + 1 !== arr.length)
+    if(currentRecord + 1 !== 5)
     {
 currentRecord += 1;
     var href = arr[currentRecord].href;
@@ -101,8 +102,14 @@ function ScrapeRecord(doc) {
     var fieldset = doc.get(0).getElementsByTagName('fieldset')[0];
     var fsText = fieldset.innerText.replace(/(\r\n|\n|\r)/gm,"").trim();
      var fillRecord = function(attr, s1, s2){
+        try{
         var matches = fsText.match('(' + s1 + ')(.*)(' + s2 + ')');
         arr[currentRecord][attr] = matches[2].trim();
+        }
+         catch(TypeError)
+         {
+             arr[currentRecord][attr] = '';
+         }
     };
     fillRecord('RecordingFee', 'Recording Fee', 'Documentary Fee');
     fillRecord('DocumentaryFee', 'Documentary Fee', 'Total Fee');
@@ -165,7 +172,7 @@ function ScrapePage(tr) {
             var objHeaders = [];
             for(var key in array[i])
             {
-                if(headers.indexOf(key) != -1)
+                if(headers.indexOf(key) == -1)
                 {
                     headers.push(key);
                 }
@@ -173,11 +180,11 @@ function ScrapePage(tr) {
         }
         for(var i = 0; i < array.length; i++)
         {
-            for(var header in headers)
+            for(var j = 0; j < headers.length; j++)
             {
-                if(!(header in array[i]))
+                if(!(headers[j] in array[i]))
                 {
-                    array[i][header] = '';
+                    array[i][headers[j]] = '';
                 }
             }
         }
