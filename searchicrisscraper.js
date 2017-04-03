@@ -91,6 +91,7 @@ function NextPage() {
     }
 }
 
+// INNER PART
 function ScrapeRecord(doc) {
     var fieldset = doc.get(0).getElementsByTagName('fieldset')[0];
     var fsText = fieldset.innerText.replace(/(\r\n|\n|\r)/gm, "").trim();
@@ -110,11 +111,17 @@ function ScrapeRecord(doc) {
     fillRecord('City', 'City', 'State');
     fillRecord('State', 'State', 'Zip');
     fillRecord('Zip', 'Zip', 'Mailback Date');
-
+    var notesFieldset = $(doc).find('fieldset:contains("Notes")');
+    arr[currentRecord]['Notes'] = notesFieldset.text().replace("Notes", '').trim();
     var tables = $(doc).find('table[width="100%"]');
     for (var i = 0; i < tables.length; i++) {
         var trHeader = '';
         var rows = $(tables[i]).find('> tbody > tr');
+        //SCRAPING LEGAL DATA
+        if(i === tables.length - 1)
+        {
+            arr[currentRecord]['Legal data'] = tables[i].innerText;
+        }
         for (var j = 0; j < rows.length; j++) {
             if (j === 0) {
                 trHeader = rows[0].innerText.trim();
@@ -131,9 +138,11 @@ function ScrapeRecord(doc) {
     NextRecord();
 }
 
+// OUTER PART
 function ScrapePage(tr) {
     var record = {};
     record.href = $(tr).find('a').attr('href');
+    record.desc = $(tr).find(' > td').first().text();
     var text = $(tr).text();
 
     var normalize = function (str, regxp, s1 = '', s2 = '') {
@@ -144,13 +153,18 @@ function ScrapePage(tr) {
             return '';
     };
     var normalizeOther = function () {
+        record['Legal data'] = '';
         var trs = $(tr).find('table[width="100%"] > tbody > tr');
         for (var i = 0; i < trs.length; i++) {
             var tds = $(trs[i]).find(' > td');
             for (var j = 0; j < tds.length; j++) {
-                var header = normalize(tds[j].innerHTML, '<b>.*?<\/b>', '<b>', '</b>');
+                var regxp = '<b>.*?<\/b>';
+                if(tds[j].innerHTML.match(regxp) !== null)
+                {
+                    var header = normalize(tds[j].innerHTML, regxp, '<b>', '</b>');
                 var value = tds[j].innerHTML.replace(tds[j].innerHTML.match(regxp)[0], '').trim();
-                record[header] = value;
+                    record[header] = value;
+                }
             }
         }
     };
