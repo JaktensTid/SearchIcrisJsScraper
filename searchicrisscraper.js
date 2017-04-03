@@ -27,17 +27,16 @@ $(document).ready(function () {
         var jsIframe = iframe.get(0);
         var doc = iframe.contents();
         jsIframe.style.webkitTransform = 'scale(1)';
-        try{
-        ScrapeRecord(doc);
-            
-        }
-        catch(TypeError)
-    {
-        var submitCaptcha = doc.get(0).getElementsByName('submit');
-        submitCaptcha.onclick = function () {
+        try {
             ScrapeRecord(doc);
-        };
-    }
+
+        }
+        catch (TypeError) {
+            var submitCaptcha = doc.get(0).getElementsByName('submit');
+            submitCaptcha.onclick = function () {
+                ScrapeRecord(doc);
+            };
+        }
     });
     iframe.attr('src', href);
 });
@@ -61,14 +60,12 @@ function Init() {
 
 function NextRecord() {
     //if(currentRecord + 1 !== arr.length)
-    if(currentRecord + 1 !== 5)
-    {
-currentRecord += 1;
-    var href = arr[currentRecord].href;
-    iframe.attr('src', href);
+    if (currentRecord + 1 !== 5) {
+        currentRecord += 1;
+        var href = arr[currentRecord].href;
+        iframe.attr('src', href);
     }
-    else
-    {
+    else {
         NextPage();
     }
 }
@@ -76,40 +73,35 @@ currentRecord += 1;
 
 function NextPage() {
     var savedArray = localStorage.getItem('records');
-    if(savedArray === null)
-    {
+    if (savedArray === null) {
         savedArray = [];
     }
-    else
-    {
+    else {
         savedArray = JSON.parse(savedArray);
     }
     ExtendArray(savedArray, arr);
     localStorage.setItem('records', JSON.stringify(savedArray));
-var last = $(document).find('span[class="pagelinks"] > a').last();
-    if(last.text() == 'Last')
-    {
+    var last = $(document).find('span[class="pagelinks"] > a').last();
+    if (last.text() == 'Last') {
         var next = $(document).find('span[class="pagelinks"] > a:contains("Next")').last();
         next[0].click();
     }
-        else
-        {
-            ToCsv(savedArray);
-        }
+    else {
+        ToCsv(savedArray);
+    }
 }
 
 function ScrapeRecord(doc) {
     var fieldset = doc.get(0).getElementsByTagName('fieldset')[0];
-    var fsText = fieldset.innerText.replace(/(\r\n|\n|\r)/gm,"").trim();
-     var fillRecord = function(attr, s1, s2){
-        try{
-        var matches = fsText.match('(' + s1 + ')(.*)(' + s2 + ')');
-        arr[currentRecord][attr] = matches[2].trim();
+    var fsText = fieldset.innerText.replace(/(\r\n|\n|\r)/gm, "").trim();
+    var fillRecord = function (attr, s1, s2) {
+        try {
+            var matches = fsText.match('(' + s1 + ')(.*)(' + s2 + ')');
+            arr[currentRecord][attr] = matches[2].trim();
         }
-         catch(TypeError)
-         {
-             arr[currentRecord][attr] = '';
-         }
+        catch (TypeError) {
+            arr[currentRecord][attr] = '';
+        }
     };
     fillRecord('RecordingFee', 'Recording Fee', 'Documentary Fee');
     fillRecord('DocumentaryFee', 'Documentary Fee', 'Total Fee');
@@ -118,27 +110,24 @@ function ScrapeRecord(doc) {
     fillRecord('City', 'City', 'State');
     fillRecord('State', 'State', 'Zip');
     fillRecord('Zip', 'Zip', 'Mailback Date');
-    
+
     var tables = $(doc).find('table[width="100%"]');
-    for(var i = 0; i < tables.length; i++){
+    for (var i = 0; i < tables.length; i++) {
         var trHeader = '';
         var rows = $(tables[i]).find('> tbody > tr');
-        for(var j = 0; j < rows.length; j++)
-        {
-            if(j === 0)
-            {
+        for (var j = 0; j < rows.length; j++) {
+            if (j === 0) {
                 trHeader = rows[0].innerText.trim();
-                if(trHeader === '') break;
+                if (trHeader === '') break;
                 arr[currentRecord][trHeader] = '';
             }
-            else
-            {
+            else {
                 arr[currentRecord][trHeader] += rows[j].innerText.trim();
             }
         }
     }
-    
-    
+
+
     NextRecord();
 }
 
@@ -146,73 +135,78 @@ function ScrapePage(tr) {
     var record = {};
     record.href = $(tr).find('a').attr('href');
     var text = $(tr).text();
-    var normalize = function (regxp, s1 = '', s2 = '') {
-        var matches = text.match(regxp);
+
+    var normalize = function (str, regxp, s1 = '', s2 = '') {
+        var matches = str.match(regxp);
         if (matches !== null)
-            return text.match(regxp)[0].replace(s1, '').replace(s2, '').trim();
+            return str.match(regxp)[0].replace(s1, '').replace(s2, '').trim();
         else
             return '';
     };
+    var normalizeOther = function () {
+        var trs = $(tr).find('table[width="100%"] > tbody > tr');
+        for (var i = 0; i < trs.length; i++) {
+            var tds = $(trs[i]).find(' > td');
+            for (var j = 0; j < tds.length; j++) {
+                var header = normalize(tds[j].innerHTML, '<b>.*?<\/b>', '<b>', '</b>');
+                var value = tds[j].innerHTML.replace(tds[j].innerHTML.match(regxp)[0], '').trim();
+                record[header] = value;
+            }
+        }
+    };
     record.name = normalize('^.*');
-    record.recDate = normalize('Rec\. Date:.*?Book Page', 'Rec. Date:', 'Book Page');
-    record.bookPage = normalize('Book Page:.*Related', 'Book Page:', 'Related');
-    record.rel = normalize('Related:.*?Rel Book Page:', 'Related:', 'Rel Book Page:');
-    record.relBookPage = normalize('Rel Book Page:.*?Grantor', 'Rel Book Page:', 'Grantor');
-    record.grantor = normalize('Grantor:.*?Grantee', 'Grantor:', 'Grantee');
-    record.grantee = normalize('Grantee:.*', 'Grantee:');
-    record.numPages = normalize('Num Pages:.*', 'Num Pages:');
+    record.recDate = normalize(text, 'Rec\. Date:.*?Book Page', 'Rec. Date:', 'Book Page');
+    record.bookPage = normalize(text, 'Book Page:.*Related', 'Book Page:', 'Related');
+    record.rel = normalize(text, 'Related:.*?Rel Book Page:', 'Related:', 'Rel Book Page:');
+    record.relBookPage = normalize(text, 'Rel Book Page:.*?Grantor', 'Rel Book Page:', 'Grantor');
+    //record.grantor = normalize(text, 'Grantor:.*?Grantee', 'Grantor:', 'Grantee');
+    //record.grantee = normalize(text, 'Grantee:.*', 'Grantee:');
+    record.numPages = normalize(text, 'Num Pages:.*', 'Num Pages:');
+    normalizeOther();
     return record;
 }
-    
-    function ToCsv(array)
-    {
-        var headers = [];
-        for(var i = 0; i < array.length; i++)
-        {
-            var objHeaders = [];
-            for(var key in array[i])
-            {
-                if(headers.indexOf(key) == -1)
-                {
-                    headers.push(key);
-                }
+
+function ToCsv(array) {
+    var headers = [];
+    for (var i = 0; i < array.length; i++) {
+        var objHeaders = [];
+        for (var key in array[i]) {
+            if (headers.indexOf(key) == -1) {
+                headers.push(key);
             }
         }
-        for(var i = 0; i < array.length; i++)
-        {
-            for(var j = 0; j < headers.length; j++)
-            {
-                if(!(headers[j] in array[i]))
-                {
-                    array[i][headers[j]] = '';
-                }
+    }
+    for (var i = 0; i < array.length; i++) {
+        for (var j = 0; j < headers.length; j++) {
+            if (!(headers[j] in array[i])) {
+                array[i][headers[j]] = '';
             }
         }
-        
-        var keys = Object.keys(array[0]);
- 
+    }
+
+    var keys = Object.keys(array[0]);
+
     var result = '"' + keys.join('","') + '"' + '\n';
- 
-    array.forEach(function(obj){
-        keys.forEach(function(k, ix){
-            if (ix == 0){
-            result += '"' + obj[k] + '"';
-        }
-        else
-        {
-            result += ',"' + obj[k] + '"';
-        }
+
+    array.forEach(function (obj) {
+        keys.forEach(function (k, ix) {
+            if (ix == 0) {
+                result += '"' + obj[k] + '"';
+            }
+            else {
+                result += ',"' + obj[k] + '"';
+            }
         });
         result += "\n";
     });
 
-          var a = document.createElement('a');
-          a.href  = 'data:attachment/csv,' +  encodeURIComponent(result);
-          a.target = '_blank';
-          a.download = 'result.csv';
-          document.body.appendChild(a);
-          a.click();
-    }
+    var a = document.createElement('a');
+    a.href = 'data:attachment/csv,' + encodeURIComponent(result);
+    a.target = '_blank';
+    a.download = 'result.csv';
+    document.body.appendChild(a);
+    a.click();
+}
 
 function ExtendArray(a, b) {
     Array.prototype.push.apply(a, b);
