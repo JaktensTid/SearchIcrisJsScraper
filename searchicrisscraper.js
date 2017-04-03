@@ -8,12 +8,11 @@
 // @grant        none
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js
 // ==/UserScript==
-
 var arr = [];
 var currentRecord = 0;
 var iframe;
 
-$(document).ready(function () {
+$(document).ready(function() {
     Init();
     iframe = document.createElement("iframe");
     iframe = $(iframe);
@@ -23,17 +22,16 @@ $(document).ready(function () {
     var div = document.getElementById('middle');
     $(div).prepend(iframe);
     var href = arr[currentRecord].href;
-    iframe.on('load', function () {
+    iframe.on('load', function() {
         var jsIframe = iframe.get(0);
         var doc = iframe.contents();
         jsIframe.style.webkitTransform = 'scale(1)';
         try {
             ScrapeRecord(doc);
 
-        }
-        catch (TypeError) {
+        } catch (TypeError) {
             var submitCaptcha = doc.get(0).getElementsByName('submit');
-            submitCaptcha.onclick = function () {
+            submitCaptcha.onclick = function() {
                 ScrapeRecord(doc);
             };
         }
@@ -64,8 +62,7 @@ function NextRecord() {
         currentRecord += 1;
         var href = arr[currentRecord].href;
         iframe.attr('src', href);
-    }
-    else {
+    } else {
         NextPage();
     }
 }
@@ -75,8 +72,7 @@ function NextPage() {
     var savedArray = localStorage.getItem('records');
     if (savedArray === null) {
         savedArray = [];
-    }
-    else {
+    } else {
         savedArray = JSON.parse(savedArray);
     }
     ExtendArray(savedArray, arr);
@@ -85,30 +81,28 @@ function NextPage() {
     if (last.text() == 'Last') {
         var next = $(document).find('span[class="pagelinks"] > a:contains("Next")').last();
         next[0].click();
-    }
-    else {
+    } else {
         ToCsv(savedArray);
     }
 }
 
-function normalize (str, regxp, s1 = '', s2 = '') {
-        var matches = str.match(regxp);
-        if (matches !== null)
-            return str.match(regxp)[0].replace(s1, '').replace(s2, '').trim();
-        else
-            return '';
-    };
+function normalize(str, regxp, s1 = '', s2 = '') {
+    var matches = str.match(regxp);
+    if (matches !== null)
+        return str.match(regxp)[0].replace(s1, '').replace(s2, '').trim();
+    else
+        return '';
+};
 
 // INNER PART
 function ScrapeRecord(doc) {
     var fieldset = doc.get(0).getElementsByTagName('fieldset')[0];
     var fsText = fieldset.innerText.replace(/(\r\n|\n|\r)/gm, "").trim();
-    var fillRecord = function (attr, s1, s2) {
+    var fillRecord = function(attr, s1, s2) {
         try {
             var matches = fsText.match('(' + s1 + ')(.*)(' + s2 + ')');
             arr[currentRecord][attr] = matches[2].trim();
-        }
-        catch (TypeError) {
+        } catch (TypeError) {
             arr[currentRecord][attr] = '';
         }
     };
@@ -120,7 +114,9 @@ function ScrapeRecord(doc) {
     fillRecord('State', 'State', 'Zip');
     fillRecord('Zip', 'Zip', 'Mailback Date');
     var notesFieldset = $(doc).find('fieldset:contains("Notes")');
+    const regex = /'((SE4|SW4|NE4|NW4|NE|NW|SE|SW|N2|S2|W2|E2|N\/2|S\/2|W\/2|E\/2|NE\/4|NW\/4|SE\/4|SW\/4){1,5})( |,|$|\n)'/g;
     arr[currentRecord]['Notes'] = notesFieldset.text().replace("Notes", '');
+    arr[currentRecord]['Subdiv'] = '';
     var tables = $(doc).find('table[width="100%"]');
     for (var i = 0; i < tables.length; i++) {
         var trHeader = '';
@@ -128,6 +124,19 @@ function ScrapeRecord(doc) {
         //SCRAPING LEGAL DATA
         if (i === tables.length - 1) {
             var legalData = tables[i].innerText.replace('Â', ', ');
+            let m;
+
+            while ((m = regex.exec(legalData)) !== null) {
+                // This is necessary to avoid infinite loops with zero-width matches
+                if (m.index === regex.lastIndex) {
+                    regex.lastIndex++;
+                }
+
+                m.forEach((match, groupIndex) => {
+                    arr[currentRecord]['Subdiv'] += match.replace('/', '').replace('4', '').trim();
+                });
+            }
+
             var sec = normalize(legalData, 'Section: .*? ', 'Section: ', '');
             var twp = normalize(legalData, 'Township: .*? ', 'Township: ', '');
             var rng = normalize(legalData, 'Range: .*? ', 'Range: ', '');
@@ -136,14 +145,31 @@ function ScrapeRecord(doc) {
             arr[currentRecord]['Township'] = twp;
             arr[currentRecord]['Range'] = rng;
         }
-        for (var j = 0; j < rows.length; j++) {
-            if (j === 0) {
-                trHeader = rows[0].innerText.trim();
-                if (trHeader === '') break;
-                arr[currentRecord][trHeader] = '';
+        for (var j = 1; j < rows.length; j++) {
+            if (i === 0) {
+                var grantor = rows[j].innerText;
+                if (grantor !== undefined){
+                    arr[currentRecord].Grantor += ', ' + grantor.replace('\n', ', ');
+                    let gSplited = arr[currentRecord].Grantor.split(',');
+                    for(let k = 0; k < gSplited.length; k++)
+                    {
+                        gSplited[k] = gSplited[k].trim();
+                    }
+                    gSplited = $.unique(gSplited);
+                    arr[currentRecord].Grantor = gSplited.join(', ');
+                }
             }
-            else {
-                arr[currentRecord][trHeader] += rows[j].innerText;
+            if (i === 1) {
+                var grantee = rows[j].innerText;
+                if (grantee !== undefined){
+                    arr[currentRecord].Grantee += ', ' + grantee.replace('\n', ', ');
+                    let gSplited = arr[currentRecord].Grantee.split(',');
+                    for(let k = 0; k < gSplited.length; k++)
+                    {
+                        gSplited[k] = gSplited[k].trim();
+                    }
+                    gSplited = $.unique(gSplited);
+                    arr[currentRecord].Grantee = gSplited.join(', ');}
             }
         }
     }
@@ -161,8 +187,8 @@ function ScrapePage(tr) {
     record['Doc num'] = desc[1];
     var text = $(tr).text();
 
-    
-    var normalizeOther = function () {
+
+    var normalizeOther = function() {
         record['Legal data'] = '';
         var trs = $(tr).find('table[width="100%"] > tbody > tr');
         for (var i = 0; i < trs.length; i++) {
@@ -170,8 +196,8 @@ function ScrapePage(tr) {
             for (var j = 0; j < tds.length; j++) {
                 var regxp = '<b>.*?<\/b>';
                 if (tds[j].innerHTML.match(regxp) !== null) {
-                    var header = normalize(tds[j].innerHTML, regxp, '<b>', '</b>');
-                    var value = tds[j].innerHTML.replace(tds[j].innerHTML.match(regxp)[0], '');
+                    var header = normalize(tds[j].innerHTML, regxp, '<b>', '</b>').replace(':', '').trim();
+                    var value = tds[j].innerHTML.replace(tds[j].innerHTML.match(regxp)[0], '').replace('\n', ',');
                     record[header] = value;
                 }
             }
@@ -211,12 +237,11 @@ function ToCsv(array) {
 
     var result = '"' + keys.join('","') + '"' + '\n';
 
-    array.forEach(function (obj) {
-        keys.forEach(function (k, ix) {
+    array.forEach(function(obj) {
+        keys.forEach(function(k, ix) {
             if (ix == 0) {
                 result += '"' + obj[k].trim() + '"';
-            }
-            else {
+            } else {
                 result += ',"' + obj[k].trim() + '"';
             }
         });
