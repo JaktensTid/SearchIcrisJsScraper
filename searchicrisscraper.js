@@ -139,31 +139,14 @@ function ScrapeRecord(doc) {
             arr[currentRecord]['Township'] = twp;
             arr[currentRecord]['Range'] = rng;
         }
-        for (var j = 1; j < rows.length; j++) {
-            if (i === 0) {
-                var grantor = rows[j].innerText;
-                if (grantor !== undefined){
-                    arr[currentRecord].Grantor += ', ' + grantor.replace('\n', ', ');
-                    let gSplited = arr[currentRecord].Grantor.split(',');
-                    for(let k = 0; k < gSplited.length; k++)
-                    {
-                        gSplited[k] = gSplited[k].trim();
-                    }
-                    gSplited = $.unique(gSplited);
-                    arr[currentRecord].Grantor = gSplited.join(', ');
-                }
+        for (var j = 0; j < rows.length; j++) {
+            if (j === 0) {
+                trHeader = rows[0].innerText.trim();
+                if (trHeader === '') break;
+                arr[currentRecord][trHeader] = '';
             }
-            if (i === 1) {
-                var grantee = rows[j].innerText;
-                if (grantee !== undefined){
-                    arr[currentRecord].Grantee += ', ' + grantee.replace('\n', ', ');
-                    let gSplited = arr[currentRecord].Grantee.split(',');
-                    for(let k = 0; k < gSplited.length; k++)
-                    {
-                        gSplited[k] = gSplited[k].trim();
-                    }
-                    gSplited = $.unique(gSplited);
-                    arr[currentRecord].Grantee = gSplited.join(', ');}
+            else {
+                arr[currentRecord][trHeader] += rows[j].innerText.replace('\n', ', ');
             }
         }
     }
@@ -199,7 +182,12 @@ function ScrapePage(tr) {
     };
     record.name = normalize('^.*');
     record.recDate = normalize(text, 'Rec\. Date:.*?Book Page', 'Rec. Date:', 'Book Page');
-    record.bookPage = normalize(text, 'Book Page:.*Related', 'Book Page:', 'Related');
+    let bookPage = normalize(text, 'Book Page:.*Related', 'Book Page:', 'Related');
+    let book = normalize(bookPage, 'B:.*P:', 'B:', 'P:');
+    let page = normalize(bookPage, 'P:.*$', 'P:');
+    record.book = book;
+    record.page = page;
+    record.bookPage = bookPage;
     record.rel = normalize(text, 'Related:.*?Rel Book Page:', 'Related:', 'Rel Book Page:');
     record.relBookPage = normalize(text, 'Rel Book Page:.*?Grantor', 'Rel Book Page:', 'Grantor');
     //record.grantor = normalize(text, 'Grantor:.*?Grantee', 'Grantor:', 'Grantee');
