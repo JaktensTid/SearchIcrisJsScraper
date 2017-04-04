@@ -114,7 +114,7 @@ function ScrapeRecord(doc) {
     fillRecord('State', 'State', 'Zip');
     fillRecord('Zip', 'Zip', 'Mailback Date');
     var notesFieldset = $(doc).find('fieldset:contains("Notes")');
-    const regex = /'((SE4|SW4|NE4|NW4|NE|NW|SE|SW|N2|S2|W2|E2|N\/2|S\/2|W\/2|E\/2|NE\/4|NW\/4|SE\/4|SW\/4){1,5})( |,|$|\n)'/g;
+    const regex = /((SE4|SW4|NE4|NW4|NE|NW|SE|SW|N2|S2|W2|E2|N\/2|S\/2|W\/2|E\/2|NE\/4|NW\/4|SE\/4|SW\/4){1,5})($| |,|\n)/g;
     arr[currentRecord]['Notes'] = notesFieldset.text().replace("Notes", '');
     arr[currentRecord]['Subdiv'] = '';
     var tables = $(doc).find('table[width="100%"]');
@@ -125,16 +125,10 @@ function ScrapeRecord(doc) {
         if (i === tables.length - 1) {
             var legalData = tables[i].innerText.replace('Â', ', ');
             let m;
-
-            while ((m = regex.exec(legalData)) !== null) {
-                // This is necessary to avoid infinite loops with zero-width matches
-                if (m.index === regex.lastIndex) {
-                    regex.lastIndex++;
-                }
-
-                m.forEach((match, groupIndex) => {
-                    arr[currentRecord]['Subdiv'] += match.replace('/', '').replace('4', '').trim();
-                });
+            let matches = legalData.trim().match(regex);
+            if(matches !== null)
+            {
+                arr[currentRecord]['Subdiv'] += matches.join(', ');
             }
 
             var sec = normalize(legalData, 'Section: .*? ', 'Section: ', '');
