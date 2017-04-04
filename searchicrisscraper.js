@@ -57,8 +57,8 @@ function Init() {
 }
 
 function NextRecord() {
-    //if(currentRecord + 1 !== arr.length)
-    if (currentRecord + 1 !== 5) {
+    if(currentRecord + 1 !== arr.length) {
+    //if (currentRecord + 1 !== 5) {
         currentRecord += 1;
         var href = arr[currentRecord].href;
         iframe.attr('src', href);
