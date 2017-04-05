@@ -109,37 +109,37 @@ function ScrapeRecord(doc) {
     };
     fillRecord('RecordingFee', 'Recording Fee', 'Documentary Fee');
     fillRecord('DocumentaryFee', 'Documentary Fee', 'Total Fee');
-    fillRecord('Address1', 'Address1', 'Address2');
-    fillRecord('Address2', 'Address2', 'City');
-    fillRecord('City', 'City', 'State');
-    fillRecord('State', 'State', 'Zip');
-    fillRecord('Zip', 'Zip', 'Mailback Date');
+    fillRecord('GRANTEE STREET ADDRESS', 'Address1', 'Address2');
+    fillRecord('GRANTEE STREET ADDRESS 2', 'Address2', 'City');
+    fillRecord('GRANTEE CITY', 'City', 'State');
+    fillRecord('GRANTEE STATE', 'State', 'Zip');
+    fillRecord('GRANTEE ZIP', 'Zip', 'Mailback Date');
     var notesFieldset = $(doc).find('fieldset:contains("Notes")');
     const regex = /((SE4|SW4|NE4|NW4|NE|NW|SE|SW|N2|S2|W2|E2|N\/2|S\/2|W\/2|E\/2|NE\/4|NW\/4|SE\/4|SW\/4){1,5})($| |,|\n)/g;
-    arr[currentRecord]['Notes'] = notesFieldset.text().replace("Notes", '');
-    arr[currentRecord]['Section'] = '';
-    arr[currentRecord]['Township'] = '';
-    arr[currentRecord]['Range'] = '';
-    arr[currentRecord]['Subdiv'] = '';
-    arr[currentRecord]['Grantor'] = '';
-    arr[currentRecord]['Grantee'] = '';
+    arr[currentRecord]['SPECIFICATIONS'] = notesFieldset.text().replace("Notes", '');
+    arr[currentRecord]['SEC'] = '';
+    arr[currentRecord]['TWP'] = '';
+    arr[currentRecord]['RNG'] = '';
+    arr[currentRecord]['LEGAL'] = '';
+    arr[currentRecord]['GRANTOR'] = '';
+    arr[currentRecord]['GRANTEE'] = '';
     
-    // Extracting sec twp range and subdiv from Notes
+    // Extracting sec twp range and subdiv (LEGAL) from Notes
     var fillFromMatches = function(matches) {
         let str = matches[0];
-        arr[currentRecord]['Range'] = str.match(/R[0-9]{1,2}/g)[0].replace(',', '');
-        arr[currentRecord]['Township'] = str.match(/T[0-9]{1,2}/g)[0].replace(',', '');
-        arr[currentRecord]['Section'] = str.match(/S[0-9]{1,2}/g)[0].replace(',', '');
-        let notes = arr[currentRecord]['Notes'].replace(str, '').trim();
+        arr[currentRecord]['RNG'] = str.match(/R[0-9]{1,2}/g)[0].replace(',', '');
+        arr[currentRecord]['TWP'] = str.match(/T[0-9]{1,2}/g)[0].replace(',', '');
+        arr[currentRecord]['SEC'] = str.match(/S[0-9]{1,2}/g)[0].replace(',', '');
+        let notes = arr[currentRecord]['SPECIFICATIONS'].replace(str, '').trim();
         let matchesSubdiv = notes.match(regex);
-        if(matchesSubdiv !== null) arr[currentRecord]['Subdiv'] = matchesSubdiv.join(', ');};
-    let matches = arr[currentRecord]['Notes'].trim().match(/R[0-9]{1,2} T[0-9]{1,2} S[0-9]{1,2}/g);
+        if(matchesSubdiv !== null) arr[currentRecord]['LEGAL'] = matchesSubdiv.join(', ');};
+    let matches = arr[currentRecord]['SPECIFICATIONS'].trim().match(/R[0-9]{1,2} T[0-9]{1,2} S[0-9]{1,2}/g);
     if(matches !== null)
     {
         fillFromMatches(matches);
     }
     else{
-    matches = arr[currentRecord]['Notes'].trim().match(/S[0-9]{1,2} T[0-9]{1,2} R[0-9]{1,2}/g);
+    matches = arr[currentRecord]['SPECIFICATIONS'].trim().match(/S[0-9]{1,2} T[0-9]{1,2} R[0-9]{1,2}/g);
     if(matches !== null)
     {
         fillFromMatches(matches);
@@ -159,7 +159,7 @@ function ScrapeRecord(doc) {
             let matchesSubdiv = legalData.trim().match(regex);
             if(matchesSubdiv !== null)
             {
-                arr[currentRecord]['Subdiv'] += arr[currentRecord]['Subdiv'] !== '' ? ', ' + matchesSubdiv.join(', ') : matchesSubdiv.join(', ');
+                arr[currentRecord]['LEGAL'] += arr[currentRecord]['LEGAL'] !== '' ? ', ' + matchesSubdiv.join(', ') : matchesSubdiv.join(', ');
             }
 
             var sec = normalize(legalData, 'Section: .*? ', 'Section: ', '');
@@ -167,11 +167,11 @@ function ScrapeRecord(doc) {
             var rng = normalize(legalData, 'Range: .*? ', 'Range: ', '');
             arr[currentRecord]['Legal data'] = legalData;
             if(sec !== '')
-            arr[currentRecord]['Section'] += arr[currentRecord]['Section'] === '' ? sec : ', '+ sec;
+            arr[currentRecord]['SEC'] += arr[currentRecord]['SEC'] === '' ? sec : ', '+ sec;
         if(twp !== '')
-            arr[currentRecord]['Township'] += arr[currentRecord]['Township'] === '' ? twp  : ', ' + twp;
+            arr[currentRecord]['TWP'] += arr[currentRecord]['TWP'] === '' ? twp  : ', ' + twp;
         if(rng !== '')
-            arr[currentRecord]['Range'] += arr[currentRecord]['Range'] === '' ? rng : ', ' + rng;
+            arr[currentRecord]['RNG'] += arr[currentRecord]['RNG'] === '' ? rng : ', ' + rng;
         }
  		
         let grantors = [];
@@ -192,13 +192,13 @@ function ScrapeRecord(doc) {
             }
         }
 
-        arr[currentRecord].Grantor += $.unique(grantors).join(', ');
-        arr[currentRecord].Grantee += $.unique(grantees).join(', ');
+        arr[currentRecord].GRANTOR += $.unique(grantors).join(', ');
+        arr[currentRecord].GRANTEE += $.unique(grantees).join(', ');
     }
 
-    arr[currentRecord]['Section'] = arr[currentRecord]['Section'].replace('S', '');
-    arr[currentRecord]['Township'] = arr[currentRecord]['Township'].replace('T', '');
-    arr[currentRecord]['Range'] = arr[currentRecord]['Range'].replace('R', '');
+    arr[currentRecord]['SEC'] = arr[currentRecord]['SEC'].replace('S', '');
+    arr[currentRecord]['TWP'] = arr[currentRecord]['TWP'].replace('T', '');
+    arr[currentRecord]['RNG'] = arr[currentRecord]['RNG'].replace('R', '');
     NextRecord();
 }
 
@@ -207,8 +207,8 @@ function ScrapePage(tr) {
     var record = {};
     record.href = $(tr).find('a').attr('href');
     var desc = $(tr).find(' > td').first().text().split('\n');
-    record['Doc name'] = desc[0];
-    record['Doc num'] = desc[1];
+    record['INSTRUMENT TYPE'] = desc[0];
+    record['RECEPTION NO'] = desc[1];
     var text = $(tr).text();
 
 
@@ -230,13 +230,12 @@ function ScrapePage(tr) {
         }
     };
     record.name = normalize('^.*');
-    record.recDate = normalize(text, 'Rec\. Date:.*?Book Page', 'Rec. Date:', 'Book Page');
+    record['RECORDED DATE']= normalize(text, 'Rec\. Date:.*?Book Page', 'Rec. Date:', 'Book Page');
     let bookPage = normalize(text, 'Book Page:.*Related', 'Book Page:', 'Related');
     let book = normalize(bookPage, 'B:.*P:', 'B:', 'P:');
     let page = normalize(bookPage, 'P:.*$', 'P:');
-    record.book = book;
-    record.page = page;
-    record.bookPage = bookPage;
+    record.BOOK= book;
+    record.PAGE= page;
     record.rel = normalize(text, 'Related:.*?Rel Book Page:', 'Related:', 'Rel Book Page:');
     record.relBookPage = normalize(text, 'Rel Book Page:.*?Grantor', 'Rel Book Page:', 'Grantor');
     //record.grantor = normalize(text, 'Grantor:.*?Grantee', 'Grantor:', 'Grantee');
