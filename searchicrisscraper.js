@@ -166,38 +166,34 @@ function ScrapeRecord(doc) {
             var twp = normalize(legalData, 'Township: .*? ', 'Township: ', '');
             var rng = normalize(legalData, 'Range: .*? ', 'Range: ', '');
             arr[currentRecord]['Legal data'] = legalData;
+            if(sec !== '')
             arr[currentRecord]['Section'] += arr[currentRecord]['Section'] === '' ? sec : ', '+ sec;
+        if(twp !== '')
             arr[currentRecord]['Township'] += arr[currentRecord]['Township'] === '' ? twp  : ', ' + twp;
+        if(rng !== '')
             arr[currentRecord]['Range'] += arr[currentRecord]['Range'] === '' ? rng : ', ' + rng;
         }
+ 		
+        let grantors = [];
+        let grantees = [];
 
         for (var j = 1; j < rows.length; j++) {
             if (i === 0) {
                 var grantor = rows[j].innerText;
                 if (grantor !== undefined){
-                    arr[currentRecord].Grantor += grantor.replace('\n', ', ');
-                    let gSplited = arr[currentRecord].Grantor.split(',');
-                    for(let k = 0; k < gSplited.length; k++)
-                    {
-                        gSplited[k] = gSplited[k].trim();
-                    }
-                    gSplited = $.unique(gSplited);
-                    arr[currentRecord].Grantor = gSplited.join(', ');
+                    grantors.push(grantor.trim());
                 }
             }
             if (i === 1) {
                 var grantee = rows[j].innerText;
                 if (grantee !== undefined){
-                    arr[currentRecord].Grantee += grantee.replace('\n', ', ');
-                    let gSplited = arr[currentRecord].Grantee.split(',');
-                    for(let k = 0; k < gSplited.length; k++)
-                    {
-                        gSplited[k] = gSplited[k].trim();
-                    }
-                    gSplited = $.unique(gSplited);
-                    arr[currentRecord].Grantee = gSplited.join(', ');}
+                    grantees.push(grantee.trim());
+                }
             }
         }
+
+        arr[currentRecord].Grantor += $.unique(grantors).join(', ');
+        arr[currentRecord].Grantee += $.unique(grantees).join(', ');
     }
 
 
