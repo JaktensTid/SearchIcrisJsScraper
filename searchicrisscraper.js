@@ -98,6 +98,7 @@ function normalize(str, regxp, s1 = '', s2 = '') {
 function ScrapeRecord(doc) {
     var fieldset = doc.get(0).getElementsByTagName('fieldset')[0];
     var fsText = fieldset.innerText.replace(/(\r\n|\n|\r)/gm, "").trim();
+    // Find value between two strings and append it to result
     var fillRecord = function(attr, s1, s2) {
         try {
             var matches = fsText.match('(' + s1 + ')(.*)(' + s2 + ')');
@@ -116,7 +117,37 @@ function ScrapeRecord(doc) {
     var notesFieldset = $(doc).find('fieldset:contains("Notes")');
     const regex = /((SE4|SW4|NE4|NW4|NE|NW|SE|SW|N2|S2|W2|E2|N\/2|S\/2|W\/2|E\/2|NE\/4|NW\/4|SE\/4|SW\/4){1,5})($| |,|\n)/g;
     arr[currentRecord]['Notes'] = notesFieldset.text().replace("Notes", '');
+    arr[currentRecord]['Section'] = '';
+    arr[currentRecord]['Township'] = '';
+    arr[currentRecord]['Range'] = '';
     arr[currentRecord]['Subdiv'] = '';
+    arr[currentRecord]['Grantor'] = '';
+    arr[currentRecord]['Grantee'] = '';
+    
+    // Extracting sec twp range and subdiv from Notes
+    var fillFromMatches = function(matches) {
+        let str = matches[0];
+        arr[currentRecord]['Range'] = str.match(/R[0-9]{1,2}/g)[0].replace(',', '');
+        arr[currentRecord]['Township'] = str.match(/T[0-9]{1,2}/g)[0].replace(',', '');
+        arr[currentRecord]['Section'] = str.match(/S[0-9]{1,2}/g)[0].replace(',', '');
+        let notes = arr[currentRecord]['Notes'].replace(str, '').trim();
+        let matchesSubdiv = notes.match(regex);
+        if(matchesSubdiv !== null) arr[currentRecord]['Subdiv'] = matchesSubdiv.join(', ');};
+    let matches = arr[currentRecord]['Notes'].trim().match(/R[0-9]{1,2} T[0-9]{1,2} S[0-9]{1,2}/g);
+    if(matches !== null)
+    {
+        fillFromMatches(matches);
+    }
+    else{
+    matches = arr[currentRecord]['Notes'].trim().match(/S[0-9]{1,2} T[0-9]{1,2} R[0-9]{1,2}/g);
+    if(matches !== null)
+    {
+        fillFromMatches(matches);
+    }
+}
+    
+    
+    
     var tables = $(doc).find('table[width="100%"]');
     for (var i = 0; i < tables.length; i++) {
         var trHeader = '';
@@ -125,25 +156,26 @@ function ScrapeRecord(doc) {
         if (i === tables.length - 1) {
             var legalData = tables[i].innerText.replace('Â', ', ');
             let m;
-            let matches = legalData.trim().match(regex);
-            if(matches !== null)
+            let matchesSubdiv = legalData.trim().match(regex);
+            if(matchesSubdiv !== null)
             {
-                arr[currentRecord]['Subdiv'] += matches.join(', ');
+                arr[currentRecord]['Subdiv'] += arr[currentRecord]['Subdiv'] !== '' ? ', ' + matchesSubdiv.join(', ') : matchesSubdiv.join(', ');
             }
 
             var sec = normalize(legalData, 'Section: .*? ', 'Section: ', '');
             var twp = normalize(legalData, 'Township: .*? ', 'Township: ', '');
             var rng = normalize(legalData, 'Range: .*? ', 'Range: ', '');
             arr[currentRecord]['Legal data'] = legalData;
-            arr[currentRecord]['Section'] = sec;
-            arr[currentRecord]['Township'] = twp;
-            arr[currentRecord]['Range'] = rng;
+            arr[currentRecord]['Section'] += arr[currentRecord]['Section'] === '' ? sec : ', '+ sec;
+            arr[currentRecord]['Township'] += arr[currentRecord]['Township'] === '' ? twp  : ', ' + twp;
+            arr[currentRecord]['Range'] += arr[currentRecord]['Range'] === '' ? rng : ', ' + rng;
         }
+
         for (var j = 1; j < rows.length; j++) {
             if (i === 0) {
                 var grantor = rows[j].innerText;
                 if (grantor !== undefined){
-                    arr[currentRecord].Grantor += ', ' + grantor.replace('\n', ', ');
+                    arr[currentRecord].Grantor += grantor.replace('\n', ', ');
                     let gSplited = arr[currentRecord].Grantor.split(',');
                     for(let k = 0; k < gSplited.length; k++)
                     {
@@ -156,7 +188,7 @@ function ScrapeRecord(doc) {
             if (i === 1) {
                 var grantee = rows[j].innerText;
                 if (grantee !== undefined){
-                    arr[currentRecord].Grantee += ', ' + grantee.replace('\n', ', ');
+                    arr[currentRecord].Grantee += grantee.replace('\n', ', ');
                     let gSplited = arr[currentRecord].Grantee.split(',');
                     for(let k = 0; k < gSplited.length; k++)
                     {
@@ -191,15 +223,22 @@ function ScrapePage(tr) {
                 var regxp = '<b>.*?<\/b>';
                 if (tds[j].innerHTML.match(regxp) !== null) {
                     var header = normalize(tds[j].innerHTML, regxp, '<b>', '</b>').replace(':', '').trim();
+                    if(header.toLowerCase().indexOf('grantor') === -1 & header.toLowerCase().indexOf('grantee') === -1){
                     var value = tds[j].innerHTML.replace(tds[j].innerHTML.match(regxp)[0], '').replace('\n', ',');
                     record[header] = value;
+                    }
                 }
             }
         }
     };
     record.name = normalize('^.*');
     record.recDate = normalize(text, 'Rec\. Date:.*?Book Page', 'Rec. Date:', 'Book Page');
-    record.bookPage = normalize(text, 'Book Page:.*Related', 'Book Page:', 'Related');
+    let bookPage = normalize(text, 'Book Page:.*Related', 'Book Page:', 'Related');
+    let book = normalize(bookPage, 'B:.*P:', 'B:', 'P:');
+    let page = normalize(bookPage, 'P:.*$', 'P:');
+    record.book = book;
+    record.page = page;
+    record.bookPage = bookPage;
     record.rel = normalize(text, 'Related:.*?Rel Book Page:', 'Related:', 'Rel Book Page:');
     record.relBookPage = normalize(text, 'Rel Book Page:.*?Grantor', 'Rel Book Page:', 'Grantor');
     //record.grantor = normalize(text, 'Grantor:.*?Grantee', 'Grantor:', 'Grantee');
