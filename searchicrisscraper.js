@@ -196,7 +196,9 @@ function ScrapeRecord(doc) {
         arr[currentRecord].Grantee += $.unique(grantees).join(', ');
     }
 
-
+    arr[currentRecord]['Section'] = arr[currentRecord]['Section'].replace('S', '');
+    arr[currentRecord]['Township'] = arr[currentRecord]['Township'].replace('T', '');
+    arr[currentRecord]['Range'] = arr[currentRecord]['Range'].replace('R', '');
     NextRecord();
 }
 
