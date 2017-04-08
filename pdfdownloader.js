@@ -14,6 +14,7 @@
 // ==/UserScript==
 var zip = new JSZip();
 var currentRecord = 0;
+var indicator = $('#middle h1:first-child');
 
 $(document).ready(function() {
     let form = document.getElementsByName('docSearch');
@@ -42,13 +43,13 @@ async function AddToZip(csv) {
     let href = csv[currentRecord]['href'].split('=')[1];
     let reception = csv[currentRecord]['RECEPTION NO'];
     let urlToPdf = 'https://searchicris.co.weld.co.us/recorder/eagleweb/downloads/' + reception + '?id=' + href + '.A0&parent=' + href + '&preview=false&noredirect=true';
-    let name = 'Rec - ' + reception + ' & url - ' + href + '.pdf';
+    let name = reception + '.pdf';
     await sleep(5000);
     JSZipUtils.getBinaryContent(urlToPdf, function(err, data) {
         if (err) {
             throw err; // or handle the error
         }
-        if (currentRecord == 3) {
+        if (currentRecord == csv.length - 1) {
             zip.generateAsync({
                     type: "blob"
                 })
@@ -61,6 +62,7 @@ async function AddToZip(csv) {
                 binary: true
             });
             console.log('Fetching ' + currentRecord);
+            indicator.text('Last fetched : ' + name);
             currentRecord++;
             AddToZip(csv);
         }

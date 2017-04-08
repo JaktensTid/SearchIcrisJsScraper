@@ -95,7 +95,7 @@ function normalize(str, regxp, s1 = '', s2 = '') {
 };
 
 // INNER PART
-function ScrapeRecord(doc) {
+async function ScrapeRecord(doc) {
     var fieldset = doc.get(0).getElementsByTagName('fieldset')[0];
     var fsText = fieldset.innerText.replace(/(\r\n|\n|\r)/gm, "").trim();
     // Find value between two strings and append it to result
@@ -199,6 +199,10 @@ function ScrapeRecord(doc) {
     arr[currentRecord]['SEC'] = arr[currentRecord]['SEC'].replace('S', '');
     arr[currentRecord]['TWP'] = arr[currentRecord]['TWP'].replace('T', '');
     arr[currentRecord]['RNG'] = arr[currentRecord]['RNG'].replace('R', '');
+
+    // UNCOMMENT THE FOLLOWING TO ADD DELAY - - - - - - - - - - - - - - - - -
+    // await sleep(5);
+
     NextRecord();
 }
 
@@ -301,4 +305,8 @@ function getParameterByName(name) {
     if (!results) return null;
     if (!results[2]) return '';
     return decodeURIComponent(results[2].replace(/\+/g, " "));
+}
+
+function sleep(s) {
+    return new Promise(resolve => setTimeout(resolve, s * 1000));
 }
