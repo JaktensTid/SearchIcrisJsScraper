@@ -10,6 +10,9 @@
 // ==/UserScript==
 var arr = [];
 var currentRecord = 0;
+var logins = {'jckaro' : 'jckaro', 'publicweb' : 'publicweb'};
+var currentLogin;
+var delay;
 var iframe;
 
 $(document).ready(function() {
@@ -41,7 +44,12 @@ $(document).ready(function() {
 
 function Init() {
     var currentUrl = window.location.href;
-
+    currentLogin = $(document.getElementsByClassName('top_link')).last().text().replace('Logout ');
+    if(currentLogin.replace('undefined') == logins.jckaro)
+    {
+    	delay = 5;
+    }
+    else delay = 1;
     if (currentUrl.indexOf('docSearchResults.jsp') > 0) {
         if (getParameterByName('page') === null || getParameterByName('page') === '1') {
             localStorage.clear();
@@ -200,8 +208,7 @@ async function ScrapeRecord(doc) {
     arr[currentRecord]['TWP'] = arr[currentRecord]['TWP'].replace('T', '');
     arr[currentRecord]['RNG'] = arr[currentRecord]['RNG'].replace('R', '');
 
-    // UNCOMMENT THE FOLLOWING TO ADD DELAY - - - - - - - - - - - - - - - - -
-    // await sleep(5);
+    await sleep(delay);
 
     NextRecord();
 }
