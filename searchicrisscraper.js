@@ -7,12 +7,13 @@
 // @match        https://searchicris.co.weld.co.us/recorder/eagleweb/docSearchResults.jsp?searchId=*
 // @grant        none
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js
+// @require      https://cdnjs.cloudflare.com/ajax/libs/notify/0.4.2/notify.min.js
 // ==/UserScript==
 var arr = [];
 var currentRecord = 0;
 var logins = {'jckaro' : 'jckaro', 'publicweb' : 'publicweb'};
 var currentLogin;
-var delay;
+var delay = 5;
 var iframe;
 
 $(document).ready(function() {
@@ -43,13 +44,10 @@ $(document).ready(function() {
 });
 
 function Init() {
+	delay = localStorage.getItem('delay') === null ? 5 : localStorage.getItem('delay');
+	localStorage.setItem('delay', delay);
     var currentUrl = window.location.href;
     currentLogin = $(document.getElementsByClassName('top_link')).last().text().replace('Logout ');
-    if(currentLogin.replace('undefined') == logins.jckaro)
-    {
-    	delay = 5;
-    }
-    else delay = 1;
     if (currentUrl.indexOf('docSearchResults.jsp') > 0) {
         if (getParameterByName('page') === null || getParameterByName('page') === '1') {
             localStorage.clear();
@@ -62,6 +60,14 @@ function Init() {
             arr[i] = ScrapePage(arr[i]);
         }
     }
+    document.onkeydown = function(evt) {
+    evt = evt || window.event;
+    if (evt.ctrlKey && evt.keyCode == 90) {
+        delay = localStorage.getItem('delay') == 5 ? 1 : 5;
+        localStorage.setItem('delay', delay);
+        $.notify('Delay is ' + delay + ' secs now');
+    }
+};
 }
 
 function NextRecord() {
