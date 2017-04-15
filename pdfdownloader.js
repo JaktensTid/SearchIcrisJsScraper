@@ -12,12 +12,11 @@
 // @require      https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.3/FileSaver.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jszip-utils/0.0.2/jszip-utils.min.js
 // ==/UserScript==
+
 var zip = new JSZip();
 var currentRecord = 0;
 var indicator = $('#middle h1:first-child');
-var recursion = localStorage.getItem('rec');
-if(recursion === null)
-    recursion =
+var timeout = 5000;
 
 $(document).ready(function () {
     let form = document.getElementsByName('docSearch');
@@ -61,47 +60,50 @@ $(document).ready(function () {
         iframe.attr('width', 800);
         $(form).prepend(iframe);
         iframe.on('load', function () {
+            if (currentRecord == csv1.length) {
+                            zip.generateAsync({
+                                type: "blob"
+                            })
+                                .then(function (content) {
+                                    saveAs(content, "Instruments.zip");
+                                });
+                        return;
+            }
             var jsIframe = iframe.get(0);
-            var doc = iframe.contents();
+            var doc = iframe.contents()[0];
             jsIframe.style.webkitTransform = 'scale(1)';
             try {
-                let submit = doc.getElementById('DocumentNumberID');
-                if (submit.length > 0) {
-                    submit = submit[0];
-                    let input = doc.getElementById('DocumentNumberID');
-                    $(input).text(csv[currentRecord][input1.text()]);
+                let input;
+                input = doc.getElementById('DocumentNumberID');
+                if (input !== null) {
+                    input.value = csv1[currentRecord][input1.val()];
                     //Go to results page
-                    submit.click();
+                    let submit = doc.getElementsByClassName('search');
+                    console.log('waiting for 5 secs');
+                    setTimeout(function() {$(submit).click();}, timeout);
                 }
                 else {
-                    var odds = document.getElementsByClassName('odd');
-                    if(odds.length === 0) return;
+                    
+                    var odds = doc.getElementsByClassName('odd');
+                    if(odds.length === 0) {Next(); iframe.attr('src', 'https://searchicris.co.weld.co.us/recorder/eagleweb/docSearch.jsp'); return;}
                     let tr = odds[0];
-                    let href = $(tr).find('a').attr('href');
+                    let href = $(tr).find('a').attr('href').split('=')[1];;
                     let reception = csv1[currentRecord][propName];
+                    let name = reception + '.pdf';
                     let urlToPdf = 'https://searchicris.co.weld.co.us/recorder/eagleweb/downloads/' + reception + '?id=' + href + '.A0&parent=' + href + '&preview=false&noredirect=true';
                     JSZipUtils.getBinaryContent(urlToPdf, function (err, data) {
                         if (err) {
                             throw err; // or handle the error
                         }
-                        if (currentRecord == 3) {
-                            zip.generateAsync({
-                                type: "blob"
-                            })
-                                .then(function (content) {
-                                    // see FileSaver.js
-                                    saveAs(content, "Instruments.zip");
-                                    localStorage.Clear();
-                                });
-                        } else {
+                        
                             zip.file(name, data, {
                                 binary: true
                             });
                             console.log('Fetching ' + currentRecord);
                             indicator.text('Last fetched : ' + name);
-                            Next();
+                            //Next();
+                            currentRecord++;
                             iframe.attr('src', 'https://searchicris.co.weld.co.us/recorder/eagleweb/docSearch.jsp');
-                        }
                     });
                 }
             } catch (TypeError) {
@@ -132,11 +134,6 @@ $(document).ready(function () {
     };
 });
 
-async function Next() {
-    await sleep(5000);
-    currentRecord++;
-}
-
 // Recur adding to zip
 function GetPdfWithHref(csv) {
     let href = csv[currentRecord]['href'].split('=')[1];
@@ -161,12 +158,8 @@ function GetPdfWithHref(csv) {
             });
             console.log('Fetching ' + currentRecord);
             indicator.text('Last fetched : ' + name);
-            Next();
-            GetPdfWithHref(csv);
+            currentRecord++;
+            setTimeout(function() {GetPdfWithHref(csv);}, timeout);
         }
     });
-}
-
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
 }
