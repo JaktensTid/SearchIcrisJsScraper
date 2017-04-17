@@ -86,9 +86,9 @@ $(document).ready(function () {
                     setTimeout(function() {$(submit).click();}, timeout);
                 }
                 else {
-                    
-                    var odds = doc.getElementsByClassName('odd');
-                    if(odds.length === 0) {unscraped.push(csv1[currentRecord][input1.val()]); currentRecord++; iframe.attr('src', 'https://searchicris.co.weld.co.us/recorder/eagleweb/docSearch.jsp'); return;}
+                    let modify = doc.getElementsByClassName('iconic modifySearch')[0];
+                    let odds = doc.getElementsByClassName('odd');
+                    if(odds.length === 0) {unscraped.push(csv1[currentRecord][input1.val()]); currentRecord++; modify.click(); return;}
                     let tr = odds[0];
                     let href = $(tr).find('a').attr('href').split('=')[1];;
                     let reception = csv1[currentRecord][propName];
@@ -106,7 +106,8 @@ $(document).ready(function () {
                             indicator.text('Last fetched : ' + name);
                             //Next();
                             currentRecord++;
-                            iframe.attr('src', 'https://searchicris.co.weld.co.us/recorder/eagleweb/docSearch.jsp');
+                            modify.click();
+                            //iframe.attr('src', 'https://searchicris.co.weld.co.us/recorder/eagleweb/docSearch.jsp');
                     });
                 }
             } catch (TypeError) {
