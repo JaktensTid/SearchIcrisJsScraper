@@ -11,8 +11,10 @@
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.3/FileSaver.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jszip-utils/0.0.2/jszip-utils.min.js
+// @require      https://cdnjs.cloudflare.com/ajax/libs/notify/0.4.2/notify.min.js
 // ==/UserScript==
 
+var unscraped = [];
 var zip = new JSZip();
 var currentRecord = 0;
 var indicator = $('#middle h1:first-child');
@@ -67,6 +69,7 @@ $(document).ready(function () {
                                 .then(function (content) {
                                     saveAs(content, "Instruments.zip");
                                 });
+                alert('Unscraped : ' + unscraped.join(', '));
                         return;
             }
             var jsIframe = iframe.get(0);
@@ -85,7 +88,7 @@ $(document).ready(function () {
                 else {
                     
                     var odds = doc.getElementsByClassName('odd');
-                    if(odds.length === 0) {Next(); iframe.attr('src', 'https://searchicris.co.weld.co.us/recorder/eagleweb/docSearch.jsp'); return;}
+                    if(odds.length === 0) {unscraped.push(csv1[currentRecord][input1.val()]); currentRecord++; iframe.attr('src', 'https://searchicris.co.weld.co.us/recorder/eagleweb/docSearch.jsp'); return;}
                     let tr = odds[0];
                     let href = $(tr).find('a').attr('href').split('=')[1];;
                     let reception = csv1[currentRecord][propName];
