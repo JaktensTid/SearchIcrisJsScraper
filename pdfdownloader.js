@@ -140,13 +140,11 @@ function GetPdfWithHref(csv) {
     let href = csv[currentRecord]['href'].split('=')[1];
     let reception = csv[currentRecord]['RECEPTION NO'];
     let urlToPdf = 'https://searchicris.co.weld.co.us/recorder/eagleweb/downloads/' + reception + '?id=' + href + '.A0&parent=' + href + '&preview=false&noredirect=true';
-    let name = 'Rec - ' + reception + ' & url - ' + href + '.pdf';
+    let name = reception + '.pdf';
     JSZipUtils.getBinaryContent(urlToPdf, function (err, data) {
         if (err) {
             throw err; // or handle the error
         }
-        
-        
             zip.file(name, data, {
                 binary: true
             });
