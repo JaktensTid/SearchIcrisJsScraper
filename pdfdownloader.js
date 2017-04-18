@@ -63,13 +63,7 @@ $(document).ready(function () {
         $(form).prepend(iframe);
         iframe.on('load', function () {
             if (currentRecord == csv1.length) {
-                            zip.generateAsync({
-                                type: "blob"
-                            })
-                                .then(function (content) {
-                                    saveAs(content, "Instruments.zip");
-                                });
-                alert('Unscraped : ' + unscraped.join(', '));
+                        GetPdfWithHref(csv1);
                         return;
             }
             var jsIframe = iframe.get(0);
@@ -86,28 +80,14 @@ $(document).ready(function () {
                     setTimeout(function() {$(submit).click();}, timeout);
                 }
                 else {
-                    
+                    let modify
                     var odds = doc.getElementsByClassName('odd');
                     if(odds.length === 0) {unscraped.push(csv1[currentRecord][input1.val()]); currentRecord++; iframe.attr('src', 'https://searchicris.co.weld.co.us/recorder/eagleweb/docSearch.jsp'); return;}
                     let tr = odds[0];
-                    let href = $(tr).find('a').attr('href').split('=')[1];;
-                    let reception = csv1[currentRecord][propName];
-                    let name = reception + '.pdf';
-                    let urlToPdf = 'https://searchicris.co.weld.co.us/recorder/eagleweb/downloads/' + reception + '?id=' + href + '.A0&parent=' + href + '&preview=false&noredirect=true';
-                    JSZipUtils.getBinaryContent(urlToPdf, function (err, data) {
-                        if (err) {
-                            throw err; // or handle the error
-                        }
-                        
-                            zip.file(name, data, {
-                                binary: true
-                            });
-                            console.log('Fetching ' + currentRecord);
-                            indicator.text('Last fetched : ' + name);
-                            //Next();
-                            currentRecord++;
-                            iframe.attr('src', 'https://searchicris.co.weld.co.us/recorder/eagleweb/docSearch.jsp');
-                    });
+                    csv1[currentRecord]['href'] = $(tr).find('a').attr('href').split('=')[1];;
+                    csv1[currentRecord]['RECEPTION NO'] = csv1[currentRecord][propName];
+                    currentRecord++;
+                    modify.click();
                 }
             } catch (TypeError) {
                 var submitCaptcha = doc.get(0).getElementsByName('submit');
