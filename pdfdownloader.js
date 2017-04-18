@@ -62,10 +62,13 @@ $(document).ready(function () {
         iframe.attr('width', 800);
         $(form).prepend(iframe);
         iframe.on('load', function () {
-            //if (currentRecord == csv1.length) {
             if (currentRecord == csv1.length) {
-                            currentRecord = 0;
-                            GetPdfWithHref(csv1);
+                            zip.generateAsync({
+                                type: "blob"
+                            })
+                                .then(function (content) {
+                                    saveAs(content, "Instruments.zip");
+                                });
                 alert('Unscraped : ' + unscraped.join(', '));
                         return;
             }
@@ -80,25 +83,40 @@ $(document).ready(function () {
                     //Go to results page
                     let submit = doc.getElementsByClassName('search');
                     console.log('waiting for 5 secs');
-                    setTimeout(function() {
-                    	$(submit).click();
-                    }, timeout);
+                    setTimeout(function() {$(submit).click();}, timeout);
+                    return;
                 }
                 else {
                     let modify = doc.getElementsByClassName('iconic modifySearch')[0];
                     let odds = doc.getElementsByClassName('odd');
                     if(odds.length === 0) {unscraped.push(csv1[currentRecord][input1.val()]); currentRecord++; modify.click(); return;}
                     let tr = odds[0];
-                    csv1[currentRecord]['href'] = $(tr).find('a').attr('href');
-                    csv1[currentRecord]['RECEPTION NO'] = csv1[currentRecord][propName];
-                    currentRecord++;
-                    modify.click();
+                    let href = $(tr).find('a').attr('href').split('=')[1];;
+                    let reception = csv1[currentRecord][propName];
+                    let name = reception + '.pdf';
+                    let urlToPdf = 'https://searchicris.co.weld.co.us/recorder/eagleweb/downloads/' + reception + '?id=' + href + '.A0&parent=' + href + '&preview=false&noredirect=true';
+                    JSZipUtils.getBinaryContent(urlToPdf, function (err, data) {
+                        if (err) {
+                            throw err; // or handle the error
+                        }
+                        
+                            zip.file(name, data, {
+                                binary: true
+                            });
+                            console.log('Fetching ' + currentRecord);
+                            indicator.text('Last fetched : ' + name);
+                            //Next();
+                            currentRecord++;
+                            modify.click();
+                            //iframe.attr('src', 'https://searchicris.co.weld.co.us/recorder/eagleweb/docSearch.jsp');
+                    });
                 }
             } catch (TypeError) {
-                //
+                var submitCaptcha = doc.get(0).getElementsByName('submit');
+                submitCaptcha.onclick = function () {
+                    //
+                };
             }
-            doc = null;
-            jsIframe = null;
         });
         iframe.attr('src', 'https://searchicris.co.weld.co.us/recorder/eagleweb/docSearch.jsp');
     };
@@ -123,8 +141,15 @@ $(document).ready(function () {
 
 // Recur adding to zip
 function GetPdfWithHref(csv) {
-    //if (currentRecord == csv.length - 1) {
-    if (currentRecord > csv.length - 1) {
+    let href = csv[currentRecord]['href'].split('=')[1];
+    let reception = csv[currentRecord]['RECEPTION NO'];
+    let urlToPdf = 'https://searchicris.co.weld.co.us/recorder/eagleweb/downloads/' + reception + '?id=' + href + '.A0&parent=' + href + '&preview=false&noredirect=true';
+    let name = 'Rec - ' + reception + ' & url - ' + href + '.pdf';
+    JSZipUtils.getBinaryContent(urlToPdf, function (err, data) {
+        if (err) {
+            throw err; // or handle the error
+        }
+        if (currentRecord == csv.length - 1) {
             zip.generateAsync({
                 type: "blob"
             })
@@ -132,24 +157,7 @@ function GetPdfWithHref(csv) {
                     // see FileSaver.js
                     saveAs(content, "Instruments.zip");
                 });
-        return;
-    }
-    if(csv[currentRecord] === undefined || 
-       csv[currentRecord]['href'] === undefined ||
-       csv[currentRecord]['RECEPTION NO'] === undefined) 
-       { 
-           currentRecord++; 
-           setTimeout(function() {GetPdfWithHref(csv);}, timeout); 
-           return;
-       }
-    let href = csv[currentRecord]['href'].split('=')[1];
-    let reception = csv[currentRecord]['RECEPTION NO'];
-    let urlToPdf = 'https://searchicris.co.weld.co.us/recorder/eagleweb/downloads/' + reception + '?id=' + href + '.A0&parent=' + href + '&preview=false&noredirect=true';
-    let name = reception + '.pdf';
-    JSZipUtils.getBinaryContent(urlToPdf, function (err, data) {
-        if (err) {
-            throw err; // or handle the error
-        }
+        } else {
             zip.file(name, data, {
                 binary: true
             });
@@ -157,6 +165,7 @@ function GetPdfWithHref(csv) {
             indicator.text('Last fetched : ' + name);
             currentRecord++;
             setTimeout(function() {GetPdfWithHref(csv);}, timeout);
-        return;
+            return;
+        }
     });
 }
