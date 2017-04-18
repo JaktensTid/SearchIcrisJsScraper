@@ -18,7 +18,7 @@ var unscraped = [];
 var zip = new JSZip();
 var currentRecord = 0;
 var indicator = $('#middle h1:first-child');
-var timeout = 5000;
+var timeout = 3000;
 
 $(document).ready(function () {
     let form = document.getElementsByName('docSearch');
@@ -40,9 +40,9 @@ $(document).ready(function () {
     appendElement('p', 'Pick .csv file with reception only and enter column name to download .pdfs');
     let csv1;
     fileSelect1[0].onchange = function (e) {
-        var files = e.target.files;
-        var file = files[0];
-        var reader = new FileReader();
+        let files = e.target.files;
+        let file = files[0];
+        let reader = new FileReader();
         reader.onload = function (evt) {
             csv1 = $.csv.toObjects(evt.target.result);
         };
@@ -62,18 +62,15 @@ $(document).ready(function () {
         iframe.attr('width', 800);
         $(form).prepend(iframe);
         iframe.on('load', function () {
+            //if (currentRecord == csv1.length) {
             if (currentRecord == csv1.length) {
-                            zip.generateAsync({
-                                type: "blob"
-                            })
-                                .then(function (content) {
-                                    saveAs(content, "Instruments.zip");
-                                });
+                            currentRecord = 0;
+                            GetPdfWithHref(csv1);
                 alert('Unscraped : ' + unscraped.join(', '));
                         return;
             }
-            var jsIframe = iframe.get(0);
-            var doc = iframe.contents()[0];
+            let jsIframe = iframe.get(0);
+            let doc = iframe.contents()[0];
             jsIframe.style.webkitTransform = 'scale(1)';
             try {
                 let input;
@@ -90,25 +87,10 @@ $(document).ready(function () {
                     let odds = doc.getElementsByClassName('odd');
                     if(odds.length === 0) {unscraped.push(csv1[currentRecord][input1.val()]); currentRecord++; modify.click(); return;}
                     let tr = odds[0];
-                    let href = $(tr).find('a').attr('href').split('=')[1];;
-                    let reception = csv1[currentRecord][propName];
-                    let name = reception + '.pdf';
-                    let urlToPdf = 'https://searchicris.co.weld.co.us/recorder/eagleweb/downloads/' + reception + '?id=' + href + '.A0&parent=' + href + '&preview=false&noredirect=true';
-                    JSZipUtils.getBinaryContent(urlToPdf, function (err, data) {
-                        if (err) {
-                            throw err; // or handle the error
-                        }
-                        
-                            zip.file(name, data, {
-                                binary: true
-                            });
-                            console.log('Fetching ' + currentRecord);
-                            indicator.text('Last fetched : ' + name);
-                            //Next();
-                            currentRecord++;
-                            modify.click();
-                            //iframe.attr('src', 'https://searchicris.co.weld.co.us/recorder/eagleweb/docSearch.jsp');
-                    });
+                    csv1[currentRecord]['href'] = $(tr).find('a').attr('href');
+                    csv1[currentRecord]['RECEPTION NO'] = csv1[currentRecord][propName];
+                    currentRecord++;
+                    modify.click();
                 }
             } catch (TypeError) {
                 var submitCaptcha = doc.get(0).getElementsByName('submit');
@@ -116,6 +98,8 @@ $(document).ready(function () {
                     //
                 };
             }
+            doc = null;
+            jsIframe = null;
         });
         iframe.attr('src', 'https://searchicris.co.weld.co.us/recorder/eagleweb/docSearch.jsp');
     };
@@ -126,9 +110,9 @@ $(document).ready(function () {
         this.value = null;
     };
     fileSelect2[0].onchange = function (e) {
-        var files = e.target.files;
-        var file = files[0];
-        var reader = new FileReader();
+        let files = e.target.files;
+        let file = files[0];
+        let reader = new FileReader();
         reader.onload = function (evt) {
             let csv = $.csv.toObjects(evt.target.result);
             GetPdfWithHref(csv);
@@ -140,6 +124,19 @@ $(document).ready(function () {
 
 // Recur adding to zip
 function GetPdfWithHref(csv) {
+    //if (currentRecord == csv.length - 1) {
+    if (currentRecord > csv.length - 1) {
+            zip.generateAsync({
+                type: "blob"
+            })
+                .then(function (content) {
+                    // see FileSaver.js
+                    saveAs(content, "Instruments.zip");
+                });
+        return;
+        }
+    if(csv[currentRecord]['href'] === undefined || csv[currentRecord]['RECEPTION NO'] === undefined) 
+       { currentRecord++; setTimeout(function() {GetPdfWithHref(csv);}, timeout); }
     let href = csv[currentRecord]['href'].split('=')[1];
     let reception = csv[currentRecord]['RECEPTION NO'];
     let urlToPdf = 'https://searchicris.co.weld.co.us/recorder/eagleweb/downloads/' + reception + '?id=' + href + '.A0&parent=' + href + '&preview=false&noredirect=true';
@@ -148,15 +145,8 @@ function GetPdfWithHref(csv) {
         if (err) {
             throw err; // or handle the error
         }
-        if (currentRecord == 3) {
-            zip.generateAsync({
-                type: "blob"
-            })
-                .then(function (content) {
-                    // see FileSaver.js
-                    saveAs(content, "Instruments.zip");
-                });
-        } else {
+        
+        
             zip.file(name, data, {
                 binary: true
             });
@@ -164,6 +154,5 @@ function GetPdfWithHref(csv) {
             indicator.text('Last fetched : ' + name);
             currentRecord++;
             setTimeout(function() {GetPdfWithHref(csv);}, timeout);
-        }
     });
 }
