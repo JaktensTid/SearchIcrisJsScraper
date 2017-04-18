@@ -80,7 +80,9 @@ $(document).ready(function () {
                     //Go to results page
                     let submit = doc.getElementsByClassName('search');
                     console.log('waiting for 5 secs');
-                    setTimeout(function() {$(submit).click();}, timeout);
+                    setTimeout(function() {
+                    	$(submit).click();
+                    }, timeout);
                 }
                 else {
                     let modify = doc.getElementsByClassName('iconic modifySearch')[0];
@@ -93,10 +95,7 @@ $(document).ready(function () {
                     modify.click();
                 }
             } catch (TypeError) {
-                var submitCaptcha = doc.get(0).getElementsByName('submit');
-                submitCaptcha.onclick = function () {
-                    //
-                };
+                //
             }
             doc = null;
             jsIframe = null;
@@ -134,9 +133,15 @@ function GetPdfWithHref(csv) {
                     saveAs(content, "Instruments.zip");
                 });
         return;
-        }
-    if(csv[currentRecord]['href'] === undefined || csv[currentRecord]['RECEPTION NO'] === undefined) 
-       { currentRecord++; setTimeout(function() {GetPdfWithHref(csv);}, timeout); }
+    }
+    if(csv[currentRecord] === undefined || 
+       csv[currentRecord]['href'] === undefined ||
+       csv[currentRecord]['RECEPTION NO'] === undefined) 
+       { 
+           currentRecord++; 
+           setTimeout(function() {GetPdfWithHref(csv);}, timeout); 
+           return;
+       }
     let href = csv[currentRecord]['href'].split('=')[1];
     let reception = csv[currentRecord]['RECEPTION NO'];
     let urlToPdf = 'https://searchicris.co.weld.co.us/recorder/eagleweb/downloads/' + reception + '?id=' + href + '.A0&parent=' + href + '&preview=false&noredirect=true';
@@ -152,5 +157,6 @@ function GetPdfWithHref(csv) {
             indicator.text('Last fetched : ' + name);
             currentRecord++;
             setTimeout(function() {GetPdfWithHref(csv);}, timeout);
+        return;
     });
 }
