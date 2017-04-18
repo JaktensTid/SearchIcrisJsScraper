@@ -18,7 +18,7 @@ var unscraped = [];
 var zip = new JSZip();
 var currentRecord = 0;
 var indicator = $('#middle h1:first-child');
-var timeout = 3000;
+var timeout = 5000;
 
 $(document).ready(function () {
     let form = document.getElementsByName('docSearch');
